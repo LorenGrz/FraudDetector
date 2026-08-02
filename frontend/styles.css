@@ -1,0 +1,40 @@
+body {
+    font-size: 0.9rem;
+}
+
+.sidebar {
+    min-height: 100vh;
+    background-color: #343a40;
+}
+
+.sidebar .nav-link {
+    color: #fff;
+}
+
+.sidebar .nav-link.active {
+    background-color: #495057;
+}
+
+.search-highlight {
+    background-color: #fff3cd;
+    padding: 0.1rem 0.2rem;
+    border-radius: 0.2rem;
+}
+
+.table-responsive-custom {
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}

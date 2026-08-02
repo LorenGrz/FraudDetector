@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard Genérico</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        font-size: 0.9rem;
+      }
+
+      .sidebar {
+        min-height: 100vh;
+        background-color: #343a40;
+      }
+
+      .sidebar .nav-link {
+        color: #fff;
+      }
+
+      .sidebar .nav-link.active {
+        background-color: #495057;
+      }
+
+      .search-highlight {
+        background-color: #fff3cd;
+        padding: 0.1rem 0.2rem;
+        border-radius: 0.2rem;
+      }
+
+      .table-responsive-custom {
+        max-height: 65vh;
+        overflow-y: auto;
+      }
+
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block sidebar p-3">
+          <h4 class="text-white">Detector de anomalías</h4>
+          <ul class="nav flex-column mt-4">
+            <li class="nav-item">
+              <a class="nav-link" href="/index.html"
+                ><i class="bi bi-speedometer2"></i> Inicio</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/reportes.html"
+                ><i class="bi bi-bar-chart"></i> Reportes</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/transacciones.html"
+                ><i class="bi bi-cash-coin"></i> Transacciones</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="#"
+                ><i class="bi bi-people"></i> Clientes</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/cajeros.html"
+                ><i class="bi bi-device-ssd"></i> Cajeros</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/tipos_transacciones.html"
+                ><i class="bi bi-wallet"></i> Tipos de transacciones</a
+              >
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+          <!-- Navbar -->
+          <nav
+            class="navbar navbar-expand-lg navbar-light bg-light my-3 rounded shadow-sm"
+          >
+            <div class="container-fluid">
+              <a class="navbar-brand" href="#">Clientes</a>
+              <button
+                class="btn btn-success"
+                id="btnCrearCliente"
+                data-bs-toggle="modal"
+                data-bs-target="#editModal"
+              >
+                <i class="bi bi-plus-circle"></i> Crear Nuevo Cliente
+              </button>
+            </div>
+          </nav>
+
+          <!-- Buscador -->
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-md-10">
+                  <div class="input-group">
+                    <span class="input-group-text"
+                      ><i class="bi bi-search"></i
+                    ></span>
+                    <input
+                      type="text"
+                      id="searchInput"
+                      class="form-control"
+                      placeholder="Buscar por número de cuenta, nombre, apellido, género, ocupación o tipo de cuenta..."
+                    />
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <button
+                    id="btnLimpiar"
+                    class="btn btn-outline-secondary w-100"
+                  >
+                    <i class="bi bi-x-circle"></i> Limpiar
+                  </button>
+                </div>
+              </div>
+              <small id="searchInfo" class="text-muted mt-2 d-block"></small>
+            </div>
+          </div>
+
+          <!-- Tabla -->
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+              <i class="bi bi-people"></i> Todos los Clientes
+            </div>
+            <div class="card-body">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Número de cuenta</th>
+                    <th>Nombre completo</th>
+                    <th>Género</th>
+                    <th>Fecha de nacimiento</th>
+                    <th>Ocupación</th>
+                    <th>Tipo de cuenta</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="clientes-tbody">
+                  <!-- JS genera tabla -->
+                </tbody>
+              </table>
+
+              <nav>
+                <ul class="pagination justify-content-center" id="pagination">
+                  <!-- JS genera botones -->
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal Editar/Crear -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="editForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-people"></i> Cliente</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Número de cuenta (ID)</label>
+                            <input type="text" class="form-control" id="editId" required />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="editNombre" required />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="editApellido" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Género</label>
+                            <input type="text" class="form-control" id="editGenero" required />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Fecha de nacimiento</label>
+                            <input type="date" class="form-control" id="editFechaNacimiento" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Ocupación</label>
+                            <input type="text" class="form-control" id="editOcupacion" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de cuenta</label>
+                            <select class="form-select" id="editTipoCuenta" required>
+                                <option value="" disabled>Seleccione...</option>
+                                <option value="Current">Current</option>
+                                <option value="Savings">Savings</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const apiBase = "http://127.0.0.1:8000/clientes";
+      let currentPage = 1;
+      let pageSize = 30;
+      let totalPages = 1;
+
+      // Variables para búsqueda en frontend
+      let allClientes = []; // Almacena TODOS los datos
+      let filteredClientes = []; // Datos filtrados por búsqueda
+      let isSearching = false; // Flag para saber si hay búsqueda activa
+      let isDataLoaded = false; // Flag para saber si ya cargamos todos los datos
+      let currentMode = 'create'; // Variable para saber en qué modo está el modal: 'create' o 'edit'
+
+      // Cargar TODOS los clientes (una sola vez)
+     async function loadAllClientes() {
+    if (isDataLoaded) return;
+
+    try {
+        let totalRecords = 5000; // Aumentar el límite por defecto a un valor más seguro
+
+        try {
+            // 💡 CORRECCIÓN: El endpoint devuelve un número, no un objeto.
+            const countRes = await fetch(`${apiBase}/count`);
+            if (countRes.ok) {
+                // Leer el valor como texto o intentar como JSON y verificar si es un número
+                const countText = await countRes.text();
+                const countNum = parseInt(countText);
+                
+                if (!isNaN(countNum) && countNum > 0) {
+                    totalRecords = countNum;
+                    console.log(`Total de registros obtenido: ${totalRecords}`);
+                } else {
+                    console.warn(
+                        "Endpoint /count disponible, pero devolvió un valor no numérico o cero. Usando valor por defecto."
+                    );
+                }
+            } else {
+                console.warn(
+                    "Endpoint /count no disponible, usando valor por defecto"
+                );
+            }
+        } catch (countError) {
+            console.warn(
+                "Error obteniendo conteo, usando valor por defecto:",
+                countError
+            );
+        }
+
+        // Ahora traemos TODOS los registros de una vez
+        // Se le suma 1 para asegurarnos que traiga un registro más que el total por si el conteo es inexacto.
+        const limitToFetch = totalRecords + 1; 
+        console.log(`Solicitando ${limitToFetch} registros...`);
+        const res = await fetch(`${apiBase}/?skip=0&limit=${limitToFetch}`); 
+
+        if (!res.ok) {
+             // Si falla con el límite grande, intenta con uno más pequeño como fallback
+            console.warn(
+              "Primera solicitud fallida, intentando con límite más pequeño..."
+            );
+            const fallbackRes = await fetch(`${apiBase}/?skip=0&limit=500`);
+            if (!fallbackRes.ok) {
+              throw new Error(
+                `Error al cargar datos: ${fallbackRes.status} ${fallbackRes.statusText}`
+              );
+            }
+            allClientes = await fallbackRes.json();
+          } else {
+            allClientes = await res.json();
+          }
+
+        filteredClientes = [...allClientes]; // Por defecto, mostrar todos
+        isDataLoaded = true;
+
+        console.log(`✅ Cargados ${allClientes.length} clientes en memoria`);
+    } catch (error) {
+        console.error("Error cargando datos:", error);
+        showError(
+            "No se pudieron cargar los datos. Verifique la conexión con el servidor."
+        );
+
+        // Mostrar datos de ejemplo en caso de error
+        allClientes = getSampleData();
+        filteredClientes = [...allClientes];
+        isDataLoaded = true;
+        console.log("Usando datos de ejemplo debido al error");
+    }
+}
+
+      // Datos de ejemplo para cuando la API falle
+      function getSampleData() {
+        return [
+          {
+            id: "001",
+            nombre: "Juan",
+            apellido: "Pérez",
+            genero: "Masculino",
+            fecha_nacimiento: "1985-05-15",
+            ocupacion: "Ingeniero",
+            tipo_cuenta: "Premium",
+          },
+          {
+            id: "002",
+            nombre: "María",
+            apellido: "González",
+            genero: "Femenino",
+            fecha_nacimiento: "1990-08-22",
+            ocupacion: "Doctora",
+            tipo_cuenta: "Estándar",
+          },
+          {
+            id: "003",
+            nombre: "Carlos",
+            apellido: "López",
+            genero: "Masculino",
+            fecha_nacimiento: "1982-12-10",
+            ocupacion: "Arquitecto",
+            tipo_cuenta: "Premium",
+          },
+          {
+            id: "004",
+            nombre: "Ana",
+            apellido: "Martínez",
+            genero: "Femenino",
+            fecha_nacimiento: "1995-03-30",
+            ocupacion: "Diseñadora",
+            tipo_cuenta: "Básica",
+          },
+          {
+            id: "005",
+            nombre: "Luis",
+            apellido: "Rodríguez",
+            genero: "Masculino",
+            fecha_nacimiento: "1978-07-18",
+            ocupacion: "Abogado",
+            tipo_cuenta: "Premium",
+          },
+          {
+            id: "006",
+            nombre: "Laura",
+            apellido: "Sánchez",
+            genero: "Femenino",
+            fecha_nacimiento: "1988-11-05",
+            ocupacion: "Contadora",
+            tipo_cuenta: "Estándar",
+          },
+        ];
+      }
+
+      // Función para actualizar cliente en memoria
+      function updateFrontendData(id, newClienteData) {
+          allClientes = allClientes.map((c) =>
+              c.id == id ? { ...c, ...newClienteData } : c
+          );
+          filteredClientes = filteredClientes.map((c) =>
+              c.id == id ? { ...c, ...newClienteData } : c
+          );
+          renderTable();
+      }
+      
+      // Función para añadir cliente en memoria
+      function addFrontendData(newCliente) {
+          allClientes.unshift(newCliente); 
+          if (isSearching) {
+              performSearch(); 
+          } else {
+              filteredClientes.unshift(newCliente);
+          }
+          calculateTotalPages();
+          currentPage = 1;
+          renderTable();
+          renderPagination();
+      }
+
+      // Renderizar tabla con datos filtrados
+      function renderTable() {
+        const tbody = document.getElementById("clientes-tbody");
+        tbody.innerHTML = "";
+
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageData = filteredClientes.slice(startIndex, endIndex);
+
+        if (pageData.length === 0) {
+             tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted p-4"><i class="bi bi-inbox fs-1"></i><p class="mb-0 mt-2">No se encontraron resultados</p></td></tr>`;
+             return;
+        }
+
+        pageData.forEach((c, i) => {
+          const tr = document.createElement("tr");
+          const globalIndex = startIndex + i + 1;
+          tr.innerHTML = `
+            <td>${globalIndex}</td>
+            <td data-id="${escapeHtml(c.id)}">${escapeHtml(c.id)}</td>
+            <td>${escapeHtml(c.apellido)}, ${escapeHtml(c.nombre)}</td>
+            <td>${escapeHtml(c.genero)}</td>
+            <td>${escapeHtml(c.fecha_nacimiento)}</td>
+            <td>${escapeHtml(c.ocupacion)}</td>
+            <td>${escapeHtml(c.tipo_cuenta)}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary edit-btn" data-bs-toggle="modal" data-bs-target="#editModal"><i class="bi bi-pencil"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Calcular total de páginas
+      function calculateTotalPages() {
+        totalPages = Math.ceil(filteredClientes.length / pageSize);
+        if (totalPages < 1) totalPages = 1;
+      }
+
+      // Realizar búsqueda en el frontend
+      function performSearch() {
+        const searchQuery = document
+          .getElementById("searchInput")
+          .value.trim()
+          .toLowerCase();
+
+        if (!searchQuery) {
+          // Si no hay búsqueda, mostrar todos
+          filteredClientes = [...allClientes];
+          isSearching = false;
+          document.getElementById("searchInfo").innerHTML = "";
+        } else {
+          // Filtrar datos
+          isSearching = true;
+          filteredClientes = allClientes.filter((cliente) => {
+            return (
+              cliente.id.toString().toLowerCase().includes(searchQuery) ||
+              (cliente.nombre &&
+                cliente.nombre.toLowerCase().includes(searchQuery)) ||
+              (cliente.apellido &&
+                cliente.apellido.toLowerCase().includes(searchQuery)) ||
+              (cliente.genero &&
+                cliente.genero.toLowerCase().includes(searchQuery)) ||
+              (cliente.ocupacion &&
+                cliente.ocupacion.toLowerCase().includes(searchQuery)) ||
+              (cliente.tipo_cuenta &&
+                cliente.tipo_cuenta.toLowerCase().includes(searchQuery))
+            );
+          });
+
+          // Mostrar info de resultados
+          document.getElementById(
+            "searchInfo"
+          ).innerHTML = `<i class="bi bi-info-circle"></i> Encontrados <strong>${
+            filteredClientes.length
+          }</strong> resultado(s) para "<strong>${escapeHtml(
+            searchQuery
+          )}</strong>"`;
+        }
+
+        // Resetear a página 1 y recalcular
+        currentPage = 1;
+        calculateTotalPages();
+        renderTable();
+        renderPagination();
+      }
+
+      // Limpiar búsqueda
+      function clearSearch() {
+        document.getElementById("searchInput").value = "";
+        performSearch(); // Esto restaurará todos los datos
+      }
+
+      // Renderizar paginación
+      function renderPagination() {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        if (totalPages <= 1) {
+          return; // No mostrar paginación si hay 1 o menos páginas
+        }
+
+        const maxVisible = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let endPage = startPage + maxVisible - 1;
+
+        if (endPage > totalPages) {
+          endPage = totalPages;
+          startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        // Botón "Primero"
+        if (currentPage > 1) {
+          pagination.appendChild(createPaginationButton("« Primero", 1));
+        }
+
+        // Botón "Anterior"
+        if (currentPage > 1) {
+          pagination.appendChild(createPaginationButton("‹", currentPage - 1));
+        }
+
+        // Botones de páginas visibles
+        for (let i = startPage; i <= endPage; i++) {
+          const li = document.createElement("li");
+          li.className = `page-item ${i === currentPage ? "active" : ""}`;
+          li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+          li.addEventListener("click", (e) => {
+            e.preventDefault();
+            goToPage(i);
+          });
+          pagination.appendChild(li);
+        }
+
+        // Botón "Siguiente"
+        if (currentPage < totalPages) {
+          pagination.appendChild(createPaginationButton("›", currentPage + 1));
+        }
+
+        // Botón "Último"
+        if (currentPage < totalPages) {
+          pagination.appendChild(
+            createPaginationButton("Último »", totalPages)
+          );
+        }
+      }
+
+      // Helper para crear botón de paginación
+      function createPaginationButton(text, page) {
+        const li = document.createElement("li");
+        li.className = "page-item";
+        li.innerHTML = `<a class="page-link" href="#">${text}</a>`;
+        li.addEventListener("click", (e) => {
+          e.preventDefault();
+          goToPage(page);
+        });
+        return li;
+      }
+
+      // Ir a una página específica
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+        renderPagination();
+
+        // Scroll suave hacia arriba
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Escapar HTML para prevenir XSS
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Mostrar errores
+      function showError(message) {
+        // Remover alertas existentes
+        const existingAlerts = document.querySelectorAll(".alert");
+        existingAlerts.forEach((alert) => alert.remove());
+
+        const alert = document.createElement("div");
+        alert.className = "alert alert-danger alert-dismissible fade show";
+        alert.innerHTML = `
+                <i class="bi bi-exclamation-triangle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+        const main = document.querySelector("main");
+        const firstCard = main.querySelector(".card");
+        main.insertBefore(alert, firstCard);
+        setTimeout(() => {
+          if (alert.parentNode) {
+            alert.remove();
+          }
+        }, 8000);
+      }
+
+      // Mostrar loading
+      function showLoading() {
+        const tbody = document.getElementById("clientes-tbody");
+        tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mb-0 mt-2">Cargando datos...</p>
+                    </td>
+                </tr>
+            `;
+      }
+
+      // Event Listeners
+      document.getElementById("searchInput").addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          performSearch();
+        }
+        if (e.key === "Escape") {
+          clearSearch();
+        }
+      });
+
+      document
+        .getElementById("btnLimpiar")
+        .addEventListener("click", clearSearch);
+
+      // Búsqueda en tiempo real con debounce
+      let searchTimeout;
+      document.getElementById("searchInput").addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          performSearch();
+        }, 400);
+      });
+
+      // Inicializar la aplicación
+      (async () => {
+        // Mostrar loading
+        showLoading();
+
+        // Cargar todos los datos
+        await loadAllClientes();
+
+        // Calcular páginas y renderizar
+        calculateTotalPages();
+        renderTable();
+        renderPagination();
+      })();
+    </script>
+    <script>
+      let editModal = new bootstrap.Modal(document.getElementById("editModal"));
+      let editForm = document.getElementById("editForm");
+      let modalTitle = document.querySelector("#editModal .modal-title");
+      let btnGuardar = document.getElementById("btnGuardar");
+      
+      // Campos del formulario
+      const fields = {
+          id: document.getElementById("editId"),
+          nombre: document.getElementById("editNombre"),
+          apellido: document.getElementById("editApellido"),
+          genero: document.getElementById("editGenero"),
+          fecha_nacimiento: document.getElementById("editFechaNacimiento"),
+          ocupacion: document.getElementById("editOcupacion"),
+          tipo_cuenta: document.getElementById("editTipoCuenta")
+      };
+      
+      const readOnlyFields = [fields.nombre, fields.apellido, fields.genero, fields.fecha_nacimiento];
+
+      // 🆕 1. Abrir modal para CREAR
+      document.getElementById("btnCrearCliente").addEventListener("click", () => {
+          currentMode = 'create';
+          modalTitle.innerHTML = '<i class="bi bi-plus-circle"></i> Crear Nuevo Cliente';
+          btnGuardar.textContent = 'Crear Cliente';
+          editForm.reset(); 
+          fields.id.removeAttribute("readonly"); // ID editable para creación
+          fields.id.focus();
+          // Habilitar todos los campos para la creación
+          Object.values(fields).forEach(field => field.removeAttribute("readonly"));
+      });
+
+      // ✏️ 2. Abrir modal para EDITAR
+      document.addEventListener("click", (e) => {
+          if (e.target.closest(".edit-btn")) {
+              const tr = e.target.closest("tr");
+              const idCell = tr.querySelector('td[data-id]');
+              const id = idCell ? idCell.getAttribute('data-id') : null;
+
+              if (!id) {
+                  showError("No se pudo obtener el ID del cliente para editar.");
+                  return;
+              }
+              
+              const cliente = filteredClientes.find(c => c.id == id);
+              if (!cliente) return;
+              
+              currentMode = 'edit';
+              modalTitle.innerHTML = `<i class="bi bi-pencil-square"></i> Editar Cliente: ${escapeHtml(cliente.apellido)}, ${escapeHtml(cliente.nombre)}`;
+              btnGuardar.textContent = 'Guardar Cambios';
+
+              // Llenar campos
+              fields.id.value = cliente.id;
+              fields.nombre.value = cliente.nombre;
+              fields.apellido.value = cliente.apellido;
+              fields.genero.value = cliente.genero;
+              fields.fecha_nacimiento.value = cliente.fecha_nacimiento;
+              fields.ocupacion.value = cliente.ocupacion;
+              fields.tipo_cuenta.value = cliente.tipo_cuenta;
+
+              // Restringir edición: Solo ID es readonly, los demás se rellenan.
+              fields.id.setAttribute("readonly", true);
+              
+              // Hacemos que solo ocupacion y tipo_cuenta sean editables.
+              readOnlyFields.forEach(field => field.setAttribute("readonly", true));
+              fields.ocupacion.removeAttribute("readonly");
+              fields.tipo_cuenta.removeAttribute("readonly");
+          }
+      });
+
+      // 💾 3. Manejador de SUBMIT (Crear o Editar)
+      editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = fields.id.value.trim();
+        const url = `${apiBase}${currentMode === 'create' ? '/' : `/${id}`}`;
+        const method = currentMode === 'create' ? 'POST' : 'PUT';
+
+        let payload = {};
+        
+        if (currentMode === 'create') {
+            // Carga completa para creación (POST)
+            payload = { 
+                id: id,
+                nombre: fields.nombre.value.trim(),
+                apellido: fields.apellido.value.trim(),
+                genero: fields.genero.value.trim(),
+                fecha_nacimiento: fields.fecha_nacimiento.value,
+                ocupacion: fields.ocupacion.value.trim(),
+                tipo_cuenta: fields.tipo_cuenta.value
+            };
+        } else {
+            // Solo campos editables para actualización (PUT)
+            payload = {
+                ocupacion: fields.ocupacion.value.trim(),
+                tipo_cuenta: fields.tipo_cuenta.value
+            };
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (res.ok) {
+                const updatedData = await res.json();
+                alert(`✅ Cliente ${id} ${currentMode === 'create' ? 'creado' : 'actualizado'} correctamente.`);
+                editModal.hide();
+
+                if (currentMode === 'create') {
+                    addFrontendData(updatedData);
+                } else {
+                    // Solo actualizamos los campos que el backend haya cambiado (ocupacion, tipo_cuenta)
+                    updateFrontendData(id, {ocupacion: updatedData.ocupacion, tipo_cuenta: updatedData.tipo_cuenta});
+                }
+
+            } else {
+                // 🛑 CORRECCIÓN: Manejo de errores 
+                const error = await res.json();
+                console.error(`Error al ${currentMode}:`, error);
+
+                let mensaje;
+                // Intentamos extraer el 'detail' si es un error HTTP normal
+                if (error.detail) {
+                    if (typeof error.detail === 'string') {
+                        mensaje = error.detail;
+                    } else if (Array.isArray(error.detail)) {
+                        // Si es un error de validación de Pydantic, formateamos la lista de errores
+                        mensaje = error.detail.map(err => 
+                            `${err.loc.join('.')}: ${err.msg}`
+                        ).join('\n');
+                    } else {
+                        // Fallback para otros formatos de detalle
+                        mensaje = JSON.stringify(error.detail, null, 2);
+                    }
+                } else if (typeof error === 'string') {
+                    mensaje = error;
+                } else {
+                    // Último fallback si el error no tiene formato conocido
+                    mensaje = JSON.stringify(error, null, 2);
+                }
+                
+                // Usamos la función showError para una mejor visualización (si la tienes definida)
+                // O si solo usas alert:
+                alert(`❌ Error al ${currentMode === 'create' ? 'crear' : 'actualizar'}:\n${mensaje}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert(`⚠️ Error de red al intentar ${currentMode === 'create' ? 'crear' : 'actualizar'} el cliente.`);
+        }
+    });
+    </script>
+  </body>
+</html>

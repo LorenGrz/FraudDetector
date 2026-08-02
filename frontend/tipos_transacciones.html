@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard Genérico</title> <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-size: 0.9rem;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background-color: #343a40;
+        }
+
+        .sidebar .nav-link {
+            color: #fff;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: #495057;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row"> <!-- Sidebar -->
+            <nav class="col-md-2 d-none d-md-block sidebar p-3">
+                <h4 class="text-white">Detector de anomalías</h4>
+                <ul class="nav flex-column mt-4">
+                    <li class="nav-item"> <a class="nav-link" href="/index.html"><i class="bi bi-speedometer2"></i>
+                            Inicio</a> </li>
+                    <li class="nav-item"> <a class="nav-link" href="/reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a>
+                    </li>
+                    <li class="nav-item"> <a class="nav-link" href="/transacciones.html"><i class="bi bi-cash-coin"></i> Transacciones</a>
+                    </li>
+                    <li class="nav-item"> <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a> </li>
+                    <li class="nav-item"> <a class="nav-link" href="/cajeros.html"><i class="bi bi-device-ssd"></i> Cajeros</a>
+                    </li>
+                    <li class="nav-item"> <a class="nav-link active" href="#"><i class="bi bi-wallet"></i> Tipos de
+                            transacciones</a> </li>
+                </ul>
+            </nav> <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4"> <!-- Navbar -->
+                <nav class="navbar navbar-expand-lg navbar-light bg-light my-3 rounded shadow-sm">
+                    <div class="container-fluid"> <a class="navbar-brand" href="#">Tipos de transacciones</a>
+                        <!-- <div class="d-flex"> <button class="btn btn-outline-primary btn-sm"><i class="bi bi-box-arrow-right"></i> Logout</button> </div> -->
+                    </div>
+                </nav>
+
+                <!-- Tabla -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white"> <i class="bi bi-wallet"></i> Todos los Tipos de Transacciones </div>
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Nombre</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tipos-tbody">
+                                <!-- JS genera tabla -->
+                            </tbody>
+                        </table>
+
+                        <nav>
+                            <ul class="pagination justify-content-center" id="pagination">
+                                <!-- JS genera botones -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div> <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    const apiBase = "http://127.0.0.1:8000/tipos_transacciones"; // ⚡ cambia por tu URL real
+    let currentPage = 1;
+    let pageSize = 30; // cantidad de filas por página
+    let totalPages = 1;
+
+    async function fetchTipos(page = 1) {
+        const skip = (page - 1) * pageSize;
+
+         // 1. Traigo la data paginada
+        const res = await fetch(`${apiBase}/?skip=${skip}&limit=${pageSize}`);
+        if (!res.ok) {
+            console.error("Error cargando tipos de transacciones");
+            return;
+        }
+        const tipos = await res.json();
+
+        // 2. Limpio la tabla
+        const tbody = document.getElementById("tipos-tbody");
+        tbody.innerHTML = "";
+
+        // 3. Cargo filas
+        tipos.forEach((c, i) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${c.id}</td>
+                <td>${c.nombre}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function fetchTotalPages() {
+        const res = await fetch(`${apiBase}/count`);
+        const data = await res.json();
+        totalPages = Math.ceil(data.total / pageSize);
+        renderPagination();
+    }
+
+    function renderPagination() {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        const maxVisible = 1; // 👈 cantidad máxima de botones visibles
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let endPage = startPage + maxVisible - 1;
+
+        if (endPage > totalPages) {
+            endPage = totalPages;
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        // Botón "Primero"
+        if (currentPage > 1) {
+            const first = document.createElement("li");
+            first.className = "page-item";
+            first.innerHTML = `<a class="page-link" href="#">« Primero</a>`;
+            first.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage = 1;
+                fetchTipos(currentPage);
+                renderPagination();
+            });
+            pagination.appendChild(first);
+        }
+
+        // Botón "Anterior"
+        if (currentPage > 1) {
+            const prev = document.createElement("li");
+            prev.className = "page-item";
+            prev.innerHTML = `<a class="page-link" href="#">‹</a>`;
+            prev.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage--;
+                fetchTipos(currentPage);
+                renderPagination();
+            });
+            pagination.appendChild(prev);
+        }
+
+        // Botones de páginas visibles
+        for (let i = startPage; i <= endPage; i++) {
+            const li = document.createElement("li");
+            li.className = `page-item ${i === currentPage ? "active" : ""}`;
+            li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            li.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage = i;
+                fetchTipos(currentPage);
+                renderPagination();
+            });
+            pagination.appendChild(li);
+        }
+
+        // Botón "Siguiente"
+        if (currentPage < totalPages) {
+            const next = document.createElement("li");
+            next.className = "page-item";
+            next.innerHTML = `<a class="page-link" href="#">›</a>`;
+            next.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage++;
+                fetchTipos(currentPage);
+                renderPagination();
+            });
+            pagination.appendChild(next);
+        }
+
+        // Botón "Último"
+        if (currentPage < totalPages) {
+            const last = document.createElement("li");
+            last.className = "page-item";
+            last.innerHTML = `<a class="page-link" href="#">Último »</a>`;
+            last.addEventListener("click", (e) => {
+                e.preventDefault();
+                currentPage = totalPages;
+                fetchTipos(currentPage);
+                renderPagination();
+            });
+            pagination.appendChild(last);
+        }
+    }
+
+    // Inicializar
+    (async () => {
+        await fetchTotalPages();
+        await fetchTipos(currentPage);
+    })();
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard Genérico</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        font-size: 0.9rem;
+      }
+
+      .sidebar {
+        min-height: 100vh;
+        background-color: #343a40;
+      }
+
+      .sidebar .nav-link {
+        color: #fff;
+      }
+
+      .sidebar .nav-link.active {
+        background-color: #495057;
+      }
+
+      .search-highlight {
+        background-color: #fff3cd;
+        padding: 0.1rem 0.2rem;
+        border-radius: 0.2rem;
+      }
+
+      .table-responsive-custom {
+        max-height: 65vh;
+        overflow-y: auto;
+      }
+
+      .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <nav class="col-md-2 d-none d-md-block sidebar p-3">
+          <h4 class="text-white">Detector de anomalías</h4>
+          <ul class="nav flex-column mt-4">
+            <li class="nav-item">
+              <a class="nav-link" href="/index.html"
+                ><i class="bi bi-speedometer2"></i> Inicio</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/reportes.html"
+                ><i class="bi bi-bar-chart"></i> Reportes</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="#"
+                ><i class="bi bi-cash-coin"></i> Transacciones</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/clientes.html"
+                ><i class="bi bi-people"></i> Clientes</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/cajeros.html"
+                ><i class="bi bi-device-ssd"></i> Cajeros</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/tipos_transacciones.html"
+                ><i class="bi bi-wallet"></i> Tipos de transacciones</a
+              >
+            </li>
+          </ul>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+          <nav
+            class="navbar navbar-expand-lg navbar-light bg-light my-3 rounded shadow-sm"
+          >
+            <div class="container-fluid">
+              <a class="navbar-brand" href="#">Transacciones</a>
+            </div>
+          </nav>
+
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-md-10">
+                  <div class="input-group">
+                    <span class="input-group-text"
+                      ><i class="bi bi-search"></i
+                    ></span>
+                    <input
+                      type="text"
+                      id="searchInput"
+                      class="form-control"
+                      placeholder="Buscar por código, fecha, número de cuenta, cajero, tipo de transacción o monto..."
+                    />
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <button
+                    id="btnLimpiar"
+                    class="btn btn-outline-secondary w-100"
+                  >
+                    <i class="bi bi-x-circle"></i> Limpiar
+                  </button>
+                </div>
+              </div>
+              <small id="searchInfo" class="text-muted mt-2 d-block"></small>
+            </div>
+          </div>
+
+          <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+              <i class="bi bi-cash-coin"></i> Todas las Transacciones
+            </div>
+            <div class="card-body">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Código de transacción</th>
+                    <th>Fecha</th>
+                    <th>Número de cuenta</th>
+                    <th>Número de cajero</th>
+                    <th>Tipo de transacción</th>
+                    <th>Monto</th>
+                  </tr>
+                </thead>
+                <tbody id="transacciones-tbody">
+                  </tbody>
+              </table>
+
+              <nav>
+                <ul class="pagination justify-content-center" id="pagination">
+                  </ul>
+              </nav>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const apiBase = "http://127.0.0.1:8000/transacciones";
+      const apiTipos = "http://127.0.0.1:8000/tipos_transacciones";
+      let currentPage = 1;
+      let pageSize = 30;
+      let totalPages = 1;
+
+      // Variables para búsqueda en frontend
+      let allTransacciones = []; // Almacena TODOS los datos
+      let filteredTransacciones = []; // Datos filtrados por búsqueda
+      let isSearching = false; // Flag para saber si hay búsqueda activa
+      let isDataLoaded = false; // Flag para saber si ya cargamos todos los datos
+      let tiposMap = {}; // Mapa para tipos de transacciones
+
+      // Cargar tipos de transacciones
+      async function fetchTiposTransacciones() {
+        try {
+          const res = await fetch(apiTipos);
+          if (!res.ok) {
+            console.warn("No se pudieron cargar los tipos de transacciones");
+            return;
+          }
+          const tipos = await res.json();
+          tipos.forEach((t) => {
+            tiposMap[t.id] = t.nombre;
+          });
+          console.log(
+            `✅ Cargados ${Object.keys(tiposMap).length} tipos de transacciones`
+          );
+        } catch (error) {
+          console.error("Error cargando tipos de transacciones:", error);
+        }
+      }
+
+      // Cargar TODOS las transacciones (una sola vez)
+      async function loadAllTransacciones() {
+        if (isDataLoaded) return; 
+
+        try {
+          let totalRecords = 5000; // Valor de fallback
+
+          // Intentar obtener el total real de registros
+          try {
+            const countRes = await fetch(`${apiBase}/count`);
+            if (countRes.ok) {
+              const countData = await countRes.json();
+              if (typeof countData === 'number' && countData > 0) {
+                 totalRecords = countData;
+              } else if (countData.total && typeof countData.total === 'number') {
+                 totalRecords = countData.total;
+              }
+              console.log(`Total de registros obtenido: ${totalRecords}`);
+            } else {
+              console.warn(
+                "Endpoint /count no disponible o devolvió error, usando límite de 5000."
+              );
+            }
+          } catch (countError) {
+            console.warn(
+              "Error obteniendo conteo, usando límite de 5000:",
+              countError
+            );
+          }
+
+          // Ahora traemos TODOS los registros con el límite dinámico (totalRecords)
+          console.log(`Solicitando ${totalRecords} registros...`);
+          const res = await fetch(`${apiBase}/?skip=0&limit=${totalRecords}`);
+
+          if (!res.ok) {
+            throw new Error(
+                `Error al cargar datos: ${res.status} ${res.statusText}. Por favor, verifique el endpoint y los límites del backend.`
+            );
+          } else {
+            allTransacciones = await res.json();
+          }
+
+          // Enriquecer datos con nombres de tipos de transacciones
+          allTransacciones = allTransacciones.map((transaccion) => {
+            return {
+              ...transaccion,
+              tipo_nombre:
+                tiposMap[transaccion.id_tipo_transaccion] ||
+                transaccion.id_tipo_transaccion,
+            };
+          });
+
+          filteredTransacciones = [...allTransacciones]; // Por defecto, mostrar todos
+          isDataLoaded = true;
+
+          console.log(
+            `✅ Cargados ${allTransacciones.length} transacciones en memoria`
+          );
+        } catch (error) {
+          console.error("Error cargando datos:", error);
+          showError(
+            "No se pudieron cargar los datos. Verifique la conexión con el servidor. " + error.message
+          );
+
+          // Mostrar datos de ejemplo en caso de error
+          allTransacciones = getSampleData();
+          filteredTransacciones = [...allTransacciones];
+          isDataLoaded = true;
+          console.log("Usando datos de ejemplo debido al error");
+        }
+      }
+
+      // Datos de ejemplo para cuando la API falle
+      function getSampleData() {
+        return [
+          {
+            id: "T001",
+            fecha_hora: "2024-01-15 10:30:00",
+            id_cliente: "C001",
+            id_cajero: "CAJ01",
+            id_tipo_transaccion: 1,
+            tipo_nombre: "Retiro",
+            monto: 500.0,
+          },
+          {
+            id: "T002",
+            fecha_hora: "2024-01-15 11:15:00",
+            id_cliente: "C002",
+            id_cajero: "CAJ02",
+            id_tipo_transaccion: 2,
+            tipo_nombre: "Depósito",
+            monto: 1200.0,
+          },
+          {
+            id: "T003",
+            fecha_hora: "2024-01-15 14:45:00",
+            id_cliente: "C003",
+            id_cajero: "CAJ01",
+            id_tipo_transaccion: 3,
+            tipo_nombre: "Transferencia",
+            monto: 300.0,
+          },
+          {
+            id: "T004",
+            fecha_hora: "2024-01-16 09:20:00",
+            id_cliente: "C001",
+            id_cajero: "CAJ03",
+            id_tipo_transaccion: 1,
+            tipo_nombre: "Retiro",
+            monto: 200.0,
+          },
+          {
+            id: "T005",
+            fecha_hora: "2024-01-16 12:30:00",
+            id_cliente: "C004",
+            id_cajero: "CAJ02",
+            id_tipo_transaccion: 2,
+            tipo_nombre: "Depósito",
+            monto: 800.0,
+          },
+          {
+            id: "T006",
+            fecha_hora: "2024-01-16 16:10:00",
+            id_cliente: "C005",
+            id_cajero: "CAJ04",
+            id_tipo_transaccion: 4,
+            tipo_nombre: "Consulta",
+            monto: 0.0,
+          },
+        ];
+      }
+
+      // Renderizar tabla con datos filtrados
+      function renderTable() {
+        const tbody = document.getElementById("transacciones-tbody");
+        tbody.innerHTML = "";
+
+        // Calcular índices para la paginación actual
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageData = filteredTransacciones.slice(startIndex, endIndex);
+
+        if (pageData.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-muted p-4">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p class="mb-0 mt-2">No se encontraron resultados</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        pageData.forEach((t, i) => {
+          const tr = document.createElement("tr");
+          const globalIndex = startIndex + i + 1;
+          tr.innerHTML = `
+                    <td>${globalIndex}</td>
+                    <td>${escapeHtml(t.id)}</td>
+                    <td>${escapeHtml(t.fecha_hora)}</td>
+                    <td>${escapeHtml(t.id_cliente)}</td>
+                    <td>${escapeHtml(t.id_cajero)}</td>
+                    <td>${escapeHtml(t.tipo_nombre)}</td>
+                    <td>${formatMonto(t.monto)}</td>
+                `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Formatear monto como moneda
+      function formatMonto(monto) {
+        if (monto === null || monto === undefined) return "0.00";
+        return parseFloat(monto).toLocaleString("es-ES", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      }
+
+      // Calcular total de páginas
+      function calculateTotalPages() {
+        totalPages = Math.ceil(filteredTransacciones.length / pageSize);
+        if (totalPages < 1) totalPages = 1;
+      }
+
+      // Realizar búsqueda en el frontend
+      function performSearch() {
+        const searchQuery = document
+          .getElementById("searchInput")
+          .value.trim()
+          .toLowerCase();
+
+        if (!searchQuery) {
+          // Si no hay búsqueda, mostrar todos
+          filteredTransacciones = [...allTransacciones];
+          isSearching = false;
+          document.getElementById("searchInfo").innerHTML = "";
+        } else {
+          // Filtrar datos
+          isSearching = true;
+          filteredTransacciones = allTransacciones.filter((transaccion) => {
+            return (
+              transaccion.id.toString().toLowerCase().includes(searchQuery) ||
+              (transaccion.fecha_hora &&
+                transaccion.fecha_hora.toLowerCase().includes(searchQuery)) ||
+              (transaccion.id_cliente &&
+                transaccion.id_cliente
+                  .toString()
+                  .toLowerCase()
+                  .includes(searchQuery)) ||
+              (transaccion.id_cajero &&
+                transaccion.id_cajero
+                  .toString()
+                  .toLowerCase()
+                  .includes(searchQuery)) ||
+              (transaccion.tipo_nombre &&
+                transaccion.tipo_nombre.toLowerCase().includes(searchQuery)) ||
+              (transaccion.monto &&
+                transaccion.monto.toString().includes(searchQuery))
+            );
+          });
+
+          // Mostrar info de resultados
+          document.getElementById(
+            "searchInfo"
+          ).innerHTML = `<i class="bi bi-info-circle"></i> Encontrados <strong>${
+            filteredTransacciones.length
+          }</strong> resultado(s) para "<strong>${escapeHtml(
+            searchQuery
+          )}</strong>"`;
+        }
+
+        // Resetear a página 1 y recalcular
+        currentPage = 1;
+        calculateTotalPages();
+        renderTable();
+        renderPagination();
+      }
+
+      // Limpiar búsqueda
+      function clearSearch() {
+        document.getElementById("searchInput").value = "";
+        performSearch(); // Esto restaurará todos los datos
+      }
+
+      // Renderizar paginación
+      function renderPagination() {
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        if (totalPages <= 1) {
+          return; // No mostrar paginación si hay 1 o menos páginas
+        }
+
+        const maxVisible = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let endPage = startPage + maxVisible - 1;
+
+        if (endPage > totalPages) {
+          endPage = totalPages;
+          startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        // Botón "Primero"
+        if (currentPage > 1) {
+          pagination.appendChild(createPaginationButton("« Primero", 1));
+        }
+
+        // Botón "Anterior"
+        if (currentPage > 1) {
+          pagination.appendChild(createPaginationButton("‹", currentPage - 1));
+        }
+
+        // Botones de páginas visibles
+        for (let i = startPage; i <= endPage; i++) {
+          const li = document.createElement("li");
+          li.className = `page-item ${i === currentPage ? "active" : ""}`;
+          li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+          li.addEventListener("click", (e) => {
+            e.preventDefault();
+            goToPage(i);
+          });
+          pagination.appendChild(li);
+        }
+
+        // Botón "Siguiente"
+        if (currentPage < totalPages) {
+          pagination.appendChild(createPaginationButton("›", currentPage + 1));
+        }
+
+        // Botón "Último"
+        if (currentPage < totalPages) {
+          pagination.appendChild(
+            createPaginationButton("Último »", totalPages)
+          );
+        }
+      }
+
+      // Helper para crear botón de paginación
+      function createPaginationButton(text, page) {
+        const li = document.createElement("li");
+        li.className = "page-item";
+        li.innerHTML = `<a class="page-link" href="#">${text}</a>`;
+        li.addEventListener("click", (e) => {
+          e.preventDefault();
+          goToPage(page);
+        });
+        return li;
+      }
+
+      // Ir a una página específica
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+        renderPagination();
+
+        // Scroll suave hacia arriba
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // Escapar HTML para prevenir XSS
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Mostrar errores
+      function showError(message) {
+        // Remover alertas existentes
+        const existingAlerts = document.querySelectorAll(".alert");
+        existingAlerts.forEach((alert) => alert.remove());
+
+        const alert = document.createElement("div");
+        alert.className = "alert alert-danger alert-dismissible fade show";
+        alert.innerHTML = `
+                <i class="bi bi-exclamation-triangle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+        const main = document.querySelector("main");
+        const firstCard = main.querySelector(".card");
+        main.insertBefore(alert, firstCard);
+        setTimeout(() => {
+          if (alert.parentNode) {
+            alert.remove();
+          }
+        }, 8000);
+      }
+
+      // Mostrar loading
+      function showLoading() {
+        const tbody = document.getElementById("transacciones-tbody");
+        tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mb-0 mt-2">Cargando datos...</p>
+                    </td>
+                </tr>
+            `;
+      }
+
+      // Event Listeners
+      document.getElementById("searchInput").addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          performSearch();
+        }
+        if (e.key === "Escape") {
+          clearSearch();
+        }
+      });
+
+      document
+        .getElementById("btnLimpiar")
+        .addEventListener("click", clearSearch);
+
+      // Búsqueda en tiempo real con debounce
+      let searchTimeout;
+      document.getElementById("searchInput").addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          performSearch();
+        }, 400);
+      });
+
+      // Inicializar la aplicación
+      (async () => {
+        // Mostrar loading
+        showLoading();
+
+        // Primero cargar los tipos de transacciones
+        await fetchTiposTransacciones();
+
+        // Luego cargar todos los datos
+        await loadAllTransacciones();
+
+        // Calcular páginas y renderizar
+        calculateTotalPages();
+        renderTable();
+        renderPagination();
+      })();
+    </script>
+  </body>
+</html>
