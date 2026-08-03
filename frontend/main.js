@@ -1,7 +1,7 @@
 async function cargarEstadisticas() {
     try {
         // Consulta a la API
-        const response = await fetch('http://127.0.0.1:8000/estadisticas');
+        const response = await fetch(window.API_BASE + '/estadisticas');
         if (!response.ok) throw new Error('Error al obtener estadísticas');
         const data = await response.json();
 
@@ -30,7 +30,7 @@ async function cargarEstadisticas() {
 async function cargarGraficoClientes() {
     try {
         // Consulta a la API
-        const response = await fetch('http://127.0.0.1:8000/anomalias/graficos/clientes_sospechosos?skip=0&limit=8819');
+        const response = await fetch(window.API_BASE + '/anomalias/graficos/clientes_sospechosos?skip=0&limit=8819');
         if (!response.ok) throw new Error("Error al cargar gráfico");
         const html = await response.text();
         const container = document.getElementById("grafico-clientes");

@@ -54,7 +54,8 @@
         z-index: 10;
       }
     </style>
-  </head>
+      <script src="./api-config.js"></script>
+</head>
 
   <body>
     <div class="container-fluid">
@@ -240,7 +241,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      const apiBase = "http://127.0.0.1:8000/clientes";
+      const apiBase = window.API_BASE + "/clientes";
       let currentPage = 1;
       let pageSize = 30;
       let totalPages = 1;

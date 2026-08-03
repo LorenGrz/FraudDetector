@@ -1,0 +1,6 @@
+backend/data_original/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.git/
+.agents/

@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  FraudDetector — FastAPI + SQLite + scikit-learn ML on Lambda Container Image.
+
+Resources:
+
+  FraudLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/fraud-detector-api
+      RetentionInDays: 7
+
+  FraudApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: fraud-detector-api
+      StageName: prod
+
+  FraudApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerTag: latest
+      DockerContext: .
+      Dockerfile: backend/Dockerfile
+    Properties:
+      FunctionName: fraud-detector-api
+      PackageType: Image
+      Architectures: [x86_64]
+      MemorySize: 1024
+      Timeout: 30
+      Events:
+        RootGet:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref FraudApi
+        ProxyAny:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref FraudApi
+
+Outputs:
+  AppUrl:
+    Description: FraudDetector live URL
+    Value: !Sub 'https://${FraudApi}.execute-api.${AWS::Region}.amazonaws.com/prod/'
