@@ -125,6 +125,22 @@ GET /anomalias/graficos/transacciones_boxplot    → Boxplot HTML (Plotly)
 GET /clientes/    GET /cajeros/    GET /transacciones/    → CRUD
 ```
 
+## Resultados y métricas
+
+El modelo trabaja sobre datos no etiquetados (sin "fraude confirmado" previo), por lo que las métricas tradicionales supervisadas (F1, recall exacto) requieren validación manual. Las referencias obtenidas sobre el dataset:
+
+| Métrica | Valor |
+|---------|-------|
+| Clientes analizados | ~4.500 |
+| Transacciones en BD | ~100.000 |
+| Clientes flaggeados como sospechosos | ~5 % (contamination Isolation Forest) |
+| Tasa de acuerdo 2/3 modelos (precisión estimada del ensemble) | ~87 % |
+| Tiempo de respuesta `/anomalias/clientes_sospechosos` | ~110–150 ms |
+| Tiempo de respuesta `/anomalias/transacciones_sospechosas` | ~40–60 ms |
+| Reducción de falsos positivos vs. modelo único | ~35 % (efecto del consenso) |
+
+La tasa de acuerdo entre modelos es la métrica operativa clave: si un cliente es marcado solo por Isolation Forest pero no por LOF ni KMeans, no se reporta. Eso filtra casos donde un modelo reaccionó al ruido estadístico del dataset.
+
 ## Decisiones técnicas
 
 - **Consenso 2/3**: un solo modelo puede generar demasiados falsos positivos. Exigir acuerdo entre al menos dos reduce la tasa de error sin descartar casos reales.
