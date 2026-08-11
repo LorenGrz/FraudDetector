@@ -10,9 +10,38 @@ from typing import Dict
 from sqlalchemy import func
 
 router = APIRouter(prefix="/estadisticas", tags=["Anomalías"])
-# APIRouter agrupa todos los endpoints bajo el prefijo /anomalias
 
-# ---- DASHBOARD ----
+# ---- ENDPOINTS RÁPIDOS (sin ML) ----
+
+@router.get("/rapidas")
+def get_stats_rapidas(db: Session = Depends(database.get_db)):
+    total_clientes = get_clientes_count(db)
+    total_transacciones = get_transacciones_count(db)
+
+    if total_transacciones == 0:
+        return {"total_clientes": total_clientes, "total_transacciones": 0, "promedio_transacciones_por_minuto": 0.0}
+
+    min_fecha = db.query(func.min(models.Transaccion.fecha_hora)).scalar()
+    max_fecha = db.query(func.max(models.Transaccion.fecha_hora)).scalar()
+
+    if not min_fecha or not max_fecha or min_fecha == max_fecha:
+        promedio = 0.0
+    else:
+        minutos = (max_fecha - min_fecha).total_seconds() / 60
+        promedio = round(total_transacciones / minutos, 2)
+
+    return {
+        "total_clientes": total_clientes,
+        "total_transacciones": total_transacciones,
+        "promedio_transacciones_por_minuto": promedio,
+    }
+
+@router.get("/distribucion_montos")
+def get_distribucion_montos(db: Session = Depends(database.get_db)):
+    rows = db.query(models.Transaccion.monto).limit(3000).all()
+    return {"montos": [float(r.monto) for r in rows]}
+
+# ---- DASHBOARD COMPLETO (con ML) ----
 
 @router.get("/", response_model=Dict[str, float])
 def get_stats(db: Session = Depends(database.get_db)):

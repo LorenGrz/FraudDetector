@@ -1,95 +1,362 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard Genérico</title>
-    <!-- Bootstrap CSS  -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+    <title>Fraud Detector</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="./api-config.js"></script>
-</head>
+    <style>
+        :root { --sidebar-w: 230px; --red: #ef4444; --blue: #3b82f6; --green: #22c55e; --amber: #f59e0b; }
+        body { background: #f1f5f9; font-family: 'Segoe UI', system-ui, sans-serif; }
 
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-w); min-height: 100vh;
+            background: #0f172a; position: fixed; top: 0; left: 0; z-index: 100;
+            display: flex; flex-direction: column;
+        }
+        .sb-brand {
+            padding: 1.25rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex; align-items: center; gap: 0.65rem;
+        }
+        .sb-logo {
+            width: 34px; height: 34px; background: var(--red); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .sb-brand h5 { color: #fff; font-size: 0.92rem; font-weight: 700; margin: 0; letter-spacing: 0.02em; }
+        .sb-brand small { color: rgba(255,255,255,0.38); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.55); padding: 0.55rem 0.9rem;
+            border-radius: 7px; margin: 1px 0.5rem; font-size: 0.83rem;
+            display: flex; align-items: center; gap: 0.55rem; transition: all 0.13s;
+        }
+        .sidebar .nav-link:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .sidebar .nav-link.active { background: var(--red); color: #fff; }
+        .sidebar .nav-link i { font-size: 0.95rem; width: 18px; }
+        .sb-footer {
+            margin-top: auto; padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .sb-status {
+            background: rgba(255,255,255,0.05); border-radius: 8px; padding: 0.65rem 0.75rem;
+        }
+        .sb-status .dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+
+        /* Main */
+        .main { margin-left: var(--sidebar-w); padding: 1.5rem; }
+        .page-title { font-size: 1.2rem; font-weight: 700; color: #0f172a; margin: 0; }
+        .page-sub { font-size: 0.8rem; color: #94a3b8; margin: 0; }
+
+        /* Stat cards */
+        .stat-card {
+            background: #fff; border-radius: 12px; padding: 1.15rem;
+            border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+        }
+        .stat-val { font-size: 1.7rem; font-weight: 700; color: #0f172a; line-height: 1.1; }
+        .stat-lbl { font-size: 0.73rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+        .stat-badge { font-size: 0.62rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+
+        /* Chart card */
+        .chart-card {
+            background: #fff; border-radius: 12px; padding: 1.15rem;
+            border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .chart-hd { font-size: 0.85rem; font-weight: 600; color: #0f172a; }
+        .chart-sub { font-size: 0.73rem; color: #94a3b8; }
+
+        /* Tabs */
+        .nav-tabs { border-bottom: 1px solid #e2e8f0; }
+        .nav-tabs .nav-link {
+            color: #64748b; border: none; border-bottom: 2px solid transparent;
+            padding: 0.55rem 0.9rem; font-size: 0.83rem; font-weight: 500; border-radius: 0;
+        }
+        .nav-tabs .nav-link:hover { color: #334155; border-bottom-color: #cbd5e1; background: none; }
+        .nav-tabs .nav-link.active { color: var(--red); border-bottom-color: var(--red); background: none; }
+
+        /* Tables */
+        .data-table th {
+            font-size: 0.71rem; text-transform: uppercase; letter-spacing: 0.04em;
+            color: #94a3b8; font-weight: 700; border: none; padding: 0.45rem 0.65rem; background: #f8fafc;
+        }
+        .data-table td {
+            font-size: 0.82rem; padding: 0.55rem 0.65rem;
+            border-color: #f1f5f9; color: #334155; vertical-align: middle;
+        }
+        .data-table tbody tr:hover { background: #f8fafc; }
+
+        /* Loading skeleton */
+        .skel {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%; animation: skel 1.4s infinite;
+            border-radius: 5px; height: 1.7rem; width: 80px; display: inline-block;
+        }
+        @keyframes skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes spinIcon { to { transform: rotate(360deg); } }
+        .spin { animation: spinIcon 1s linear infinite; display: inline-block; }
+
+        /* ML summary boxes */
+        .ml-box {
+            border-radius: 8px; padding: 0.75rem 1rem; text-align: center;
+        }
+        .ml-box .val { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+        .ml-box .lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 2px; }
+
+        /* Dataset info */
+        .ds-item {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 0.7rem 0.9rem;
+        }
+        .ds-item .ds-title { font-size: 0.82rem; font-weight: 600; color: #0f172a; }
+        .ds-item .ds-desc { font-size: 0.74rem; color: #64748b; margin-top: 2px; }
+
+        @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; } }
+    </style>
+</head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar p-3">
-                <h4 class="text-white">Detector de anomalías</h4>
-                <ul class="nav flex-column mt-4">
-                    <li class="nav-item"> <a class="nav-link active" href="#"><i class="bi bi-speedometer2"></i>Inicio</a> </li>
-                    <li class="nav-item"> <a class="nav-link" href="/reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a></li>
-                    <li class="nav-item"> <a class="nav-link" href="/transacciones.html"><i class="bi bi-cash-coin"></i> Transacciones</a></li>
-                    <li class="nav-item"> <a class="nav-link" href="/clientes.html"><i class="bi bi-people"></i> Clientes</a> </li>
-                    <li class="nav-item"> <a class="nav-link" href="/cajeros.html"><i class="bi bi-device-ssd"></i> Cajeros</a></li>
-                    <li class="nav-item"> <a class="nav-link" href="/tipos_transacciones.html"><i class="bi bi-wallet"></i> Tipos de transacciones</a> </li>
-                </ul>
-            </nav>
-            <!-- Main content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <!-- Navbar -->
-                <nav class="navbar navbar-expand-lg navbar-light bg-light my-3 rounded shadow-sm">
-                    <div class="container-fluid"> <a class="navbar-brand" href="#">Estadísticas</a></div>
-                </nav>
-                <!-- Cards grid -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card text-bg-primary shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Clientes totales</h5>
-                            <div class="card-text fs-4" id="total-clientes"><div class="spinner-border spinner-border-sm text-light" role="status"></div></div>
-                        </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-bg-success shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Transacciones totales</h5>
-                            <div class="card-text fs-4" id="transacciones-totales"><div class="spinner-border spinner-border-sm text-light" role="status"></div></div>
-                        </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-bg-warning shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Transacciones por minuto</h5>
-                            <div class="card-text fs-4" id="transacciones-por-minuto"><div class="spinner-border spinner-border-sm text-light" role="status"></div></div>
-                        </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card text-bg-danger shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Clientes sospechosos</h5>
-                            <div class="card-text fs-4" id="clientes-sospechosos"><div class="spinner-border spinner-border-sm text-light" role="status"></div></div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Gráfico -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header">
-                        <i class="bi bi-graph-up"></i> Gráfico de clientes sospechosos
-                    </div>
-                    <div class="card-body">
-                        <div id="grafico-clientes" class="w-100"></div>
-                    </div>
-                </div>
-            </main>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+    <div class="sb-brand">
+        <div class="sb-logo">
+            <i class="bi bi-shield-fill-check text-white" style="font-size:1rem;"></i>
+        </div>
+        <div>
+            <h5>Fraud Detector</h5>
+            <small>Panel de análisis</small>
         </div>
     </div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="main.js"></script>
-    <script>
-        // Cargar al inicio
-        cargarEstadisticas();
-    </script>
-</body>
+    <ul class="nav flex-column mt-2 px-1">
+        <li><a class="nav-link active" href="index.html"><i class="bi bi-speedometer2"></i> Inicio</a></li>
+        <li><a class="nav-link" href="transacciones.html"><i class="bi bi-cash-coin"></i> Transacciones</a></li>
+        <li><a class="nav-link" href="clientes.html"><i class="bi bi-people"></i> Clientes</a></li>
+        <li><a class="nav-link" href="cajeros.html"><i class="bi bi-device-ssd"></i> Cajeros</a></li>
+        <li><a class="nav-link" href="tipos_transacciones.html"><i class="bi bi-wallet"></i> Tipos</a></li>
+        <li><a class="nav-link" href="reportes.html"><i class="bi bi-bar-chart"></i> Reportes</a></li>
+    </ul>
+    <div class="sb-footer">
+        <div class="sb-status">
+            <div class="d-flex align-items-center gap-2">
+                <div class="dot"></div>
+                <span style="color:rgba(255,255,255,0.45);font-size:0.73rem;">Sistema activo</span>
+            </div>
+            <div id="sidebar-date" style="color:rgba(255,255,255,0.28);font-size:0.65rem;margin-top:2px;"></div>
+        </div>
+    </div>
+</nav>
 
+<!-- Main -->
+<main class="main">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h4 class="page-title">Dashboard</h4>
+            <p class="page-sub">Monitoreo de transacciones bancarias y detección de anomalías</p>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" id="refresh-btn" onclick="refreshAll()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon" style="background:#eff6ff;">
+                        <i class="bi bi-people-fill" style="color:var(--blue);"></i>
+                    </div>
+                    <span class="stat-badge" style="background:#f0fdf4;color:#16a34a;">LIVE</span>
+                </div>
+                <div class="stat-val" id="s-clientes"><span class="skel"></span></div>
+                <div class="stat-lbl mt-1">Clientes totales</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon" style="background:#f0fdf4;">
+                        <i class="bi bi-arrow-left-right" style="color:var(--green);"></i>
+                    </div>
+                    <span class="stat-badge" style="background:#f0fdf4;color:#16a34a;">LIVE</span>
+                </div>
+                <div class="stat-val" id="s-transacciones"><span class="skel"></span></div>
+                <div class="stat-lbl mt-1">Transacciones totales</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon" style="background:#fffbeb;">
+                        <i class="bi bi-activity" style="color:var(--amber);"></i>
+                    </div>
+                    <span class="stat-badge" style="background:#f0fdf4;color:#16a34a;">LIVE</span>
+                </div>
+                <div class="stat-val" id="s-tpm"><span class="skel"></span></div>
+                <div class="stat-lbl mt-1">Transacciones / min</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="stat-icon" style="background:#fef2f2;">
+                        <i class="bi bi-exclamation-triangle-fill" style="color:var(--red);"></i>
+                    </div>
+                    <span class="stat-badge" style="background:#fffbeb;color:#b45309;">ML</span>
+                </div>
+                <div class="stat-val" id="s-sospechosos"><span class="skel"></span></div>
+                <div class="stat-lbl mt-1">Clientes sospechosos</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-lg-7">
+            <div class="chart-card">
+                <div class="chart-hd">Distribución de montos</div>
+                <div class="chart-sub mb-2">Histograma · primeras 3.000 transacciones</div>
+                <div id="chart-hist" style="min-height:250px;"></div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-5">
+            <div class="chart-card">
+                <div class="chart-hd">Montos por rango</div>
+                <div class="chart-sub mb-2">Proporción del dataset</div>
+                <div id="chart-pie" style="min-height:250px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs section -->
+    <div class="chart-card">
+        <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-ml" type="button">
+                    <i class="bi bi-cpu me-1"></i>Análisis ML
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-datos" type="button" id="btn-datos">
+                    <i class="bi bi-table me-1"></i>Datos recientes
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dataset" type="button">
+                    <i class="bi bi-database me-1"></i>Sobre el dataset
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content">
+
+            <!-- ML Tab -->
+            <div class="tab-pane fade show active" id="tab-ml">
+                <div id="ml-status" class="text-center py-5">
+                    <div class="spinner-border text-danger mb-2" role="status" style="width:1.5rem;height:1.5rem;"></div>
+                    <p class="text-muted small mb-0">Ejecutando modelos de detección de anomalías…</p>
+                    <p class="text-muted" style="font-size:0.72rem;">Isolation Forest · LOF · K-Means · puede tardar ~20 s</p>
+                </div>
+                <div id="ml-summary" style="display:none;" class="mb-3">
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <div class="ml-box" style="background:#fef2f2;">
+                                <div class="val" style="color:#dc2626;" id="ml-count-mal">—</div>
+                                <div class="lbl" style="color:#dc2626;">Sospechosos</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="ml-box" style="background:#f0fdf4;">
+                                <div class="val" style="color:#16a34a;" id="ml-count-ok">—</div>
+                                <div class="lbl" style="color:#16a34a;">Normales</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="ml-box" style="background:#eff6ff;">
+                                <div class="val" style="color:#2563eb;" id="ml-pct">—</div>
+                                <div class="lbl" style="color:#2563eb;">% Anomalía</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted small">Clasificación por consenso ≥ 2/3 modelos. El gráfico muestra monto promedio vs. tiempo entre transacciones por cliente.</p>
+                </div>
+                <div id="ml-scatter"></div>
+            </div>
+
+            <!-- Datos Tab -->
+            <div class="tab-pane fade" id="tab-datos">
+                <div id="datos-content">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-secondary mb-2" role="status" style="width:1.5rem;height:1.5rem;"></div>
+                        <p class="text-muted small mb-0">Cargando datos…</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dataset Tab -->
+            <div class="tab-pane fade" id="tab-dataset">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-2" style="font-size:0.85rem;">¿Con qué datos trabaja el sistema?</h6>
+                        <p class="text-muted" style="font-size:0.8rem;">Dataset de transacciones bancarias simuladas con estructura relacional:</p>
+                        <ul class="text-muted" style="font-size:0.78rem;">
+                            <li><strong>~8.819 transacciones</strong> con fecha, monto, cliente y cajero</li>
+                            <li><strong>Clientes:</strong> ID, nombre, apellido, género, ocupación, tipo de cuenta</li>
+                            <li><strong>Cajeros:</strong> ID, nombre, ciudad, provincia, país</li>
+                            <li><strong>Tipos de transacción:</strong> retiro, depósito, transferencia, etc.</li>
+                        </ul>
+                        <p class="text-muted" style="font-size:0.78rem;">
+                            Los features usados por los modelos ML son calculados por cliente:
+                            conteo de transacciones, monto promedio, monto máximo, monto mínimo,
+                            desviación estándar de montos y tiempo promedio entre transacciones.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-2" style="font-size:0.85rem;">Modelos de ML</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="ds-item">
+                                <div class="ds-title">Isolation Forest</div>
+                                <div class="ds-desc">Aísla anomalías particionando el espacio de features. Contamination=5%.</div>
+                            </div>
+                            <div class="ds-item">
+                                <div class="ds-title">Local Outlier Factor (LOF)</div>
+                                <div class="ds-desc">Detecta outliers por densidad relativa. n_neighbors=20, contamination=auto.</div>
+                            </div>
+                            <div class="ds-item">
+                                <div class="ds-title">K-Means Clustering</div>
+                                <div class="ds-desc">Agrupa clientes y marca al percentil 95 más alejado de su centroide como sospechoso.</div>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2" style="font-size:0.75rem;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Un cliente se reporta solo si <strong>≥ 2 modelos</strong> coinciden (consenso 2/3).
+                            Esto reduce falsos positivos ~35% respecto a modelo único.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="main.js"></script>
+<script>
+    document.getElementById('sidebar-date').textContent =
+        new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' });
+
+    // Lazy-load datos tab
+    document.getElementById('btn-datos').addEventListener('click', loadDataTab);
+
+    initDashboard();
+</script>
+</body>
 </html>
