@@ -39,6 +39,7 @@
             .main {
                 margin-left: 0 !important;
                 padding-top: calc(52px + 1rem) !important;
+                overflow-x: hidden;
             }
         }
     `;

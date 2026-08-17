@@ -103,6 +103,12 @@ async function loadMlContent() {
                 if (s.src) tag.src = s.src;
                 document.body.appendChild(tag);
             }
+            // Force resize after Plotly renders to fill the container correctly
+            setTimeout(() => {
+                container.querySelectorAll('.plotly-graph-div').forEach(d => {
+                    if (window.Plotly) Plotly.Plots.resize(d);
+                });
+            }, 200);
         }
     } catch {
         document.getElementById('ml-status').innerHTML =
