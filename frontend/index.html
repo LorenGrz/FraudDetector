@@ -223,14 +223,14 @@
             <div class="chart-card">
                 <div class="chart-hd">Distribución de montos</div>
                 <div class="chart-sub mb-2">Histograma · primeras 3.000 transacciones</div>
-                <div id="chart-hist" style="min-height:250px;"></div>
+                <div id="chart-hist" style="height:250px;"></div>
             </div>
         </div>
         <div class="col-12 col-lg-5">
             <div class="chart-card">
                 <div class="chart-hd">Montos por rango</div>
                 <div class="chart-sub mb-2">Proporción del dataset</div>
-                <div id="chart-pie" style="min-height:250px;"></div>
+                <div id="chart-pie" style="height:250px;"></div>
             </div>
         </div>
     </div>
@@ -286,7 +286,7 @@
                     </div>
                     <p class="text-muted small">Clasificación por consenso ≥ 2/3 modelos. El gráfico muestra monto promedio vs. tiempo entre transacciones por cliente.</p>
                 </div>
-                <div id="ml-scatter"></div>
+                <div id="ml-scatter" style="height:380px;"></div>
             </div>
 
             <!-- Datos Tab -->
@@ -349,6 +349,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script src="main.js"></script>
+<script src="sidebar.js"></script>
 <script>
     document.getElementById('sidebar-date').textContent =
         new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' });

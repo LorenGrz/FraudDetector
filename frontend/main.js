@@ -38,8 +38,8 @@ async function loadDistribucion() {
             paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
             xaxis: { title: 'Monto ($)', gridcolor: '#f1f5f9', color: '#64748b', tickfont: { size: 10 } },
             yaxis: { title: 'Cantidad', gridcolor: '#f1f5f9', color: '#64748b', tickfont: { size: 10 } },
-            showlegend: false, height: 250,
-        }, { displayModeBar: false, responsive: true });
+            showlegend: false, height: 250, dragmode: false,
+        }, { displayModeBar: false, responsive: true, scrollZoom: false });
 
         // Donut by range
         const edges = [0, 1000, 5000, 10000, Infinity];
@@ -59,7 +59,7 @@ async function loadDistribucion() {
             paper_bgcolor: 'transparent',
             legend: { orientation: 'v', font: { size: 10 }, x: 1.02, y: 0.5 },
             height: 250,
-        }, { displayModeBar: false, responsive: true });
+        }, { displayModeBar: false, responsive: true, scrollZoom: false });
 
     } catch {
         ['chart-hist', 'chart-pie'].forEach(id => {

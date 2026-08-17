@@ -285,8 +285,14 @@ def grafico_clientes_sospechosos(skip: int = 0, limit: int = 5000, db: Session =
         color=df_features["sospechoso"].map({1: "Normal", -1: "Sospechoso"}),
         hover_data=["id_cliente"]
     )
+    fig.update_layout(
+        autosize=True,
+        margin=dict(t=30, r=10, b=50, l=60),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
 
-    return fig.to_html(full_html=True) # Devuelve el gráfico como un HTML completo
+    return fig.to_html(full_html=False, include_plotlyjs=False, config={"responsive": True, "displayModeBar": False})
 
 @router.get("/graficos/transacciones_sospechosas", response_class=HTMLResponse)
 def grafico_transacciones_sospechosas(skip: int = 0, limit: int = 5000, db: Session = Depends(database.get_db)):
@@ -333,10 +339,12 @@ def grafico_transacciones_sospechosas(skip: int = 0, limit: int = 5000, db: Sess
     fig.update_layout(
         xaxis_title="Fecha y Hora",
         yaxis_title="Monto ($)",
-        hovermode="closest"
+        hovermode="closest",
+        autosize=True,
+        margin=dict(t=50, r=10, b=50, l=60),
     )
 
-    return fig.to_html(full_html=True)
+    return fig.to_html(full_html=False, include_plotlyjs=False, config={"responsive": True, "displayModeBar": False})
 
 @router.get("/graficos/transacciones_boxplot", response_class=HTMLResponse)
 def grafico_boxplot_transacciones(skip: int = 0, limit: int = 5000, db: Session = Depends(database.get_db)):
@@ -380,10 +388,12 @@ def grafico_boxplot_transacciones(skip: int = 0, limit: int = 5000, db: Session 
     fig.update_layout(
         xaxis_title="Hora del día",
         yaxis_title="Monto ($)",
-        hovermode="closest"
+        hovermode="closest",
+        autosize=True,
+        margin=dict(t=50, r=10, b=50, l=60),
     )
 
-    return fig.to_html(full_html=True)
+    return fig.to_html(full_html=False, include_plotlyjs=False, config={"responsive": True, "displayModeBar": False})
 
 # ---- DASHBOARD ----
 
