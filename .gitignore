@@ -1,1 +1,9 @@
 .agents/
+
+# build artifacts / tooling local
+.aws-sam/
+.vscode/
+__pycache__/
+*.pyc
+.venv/
+venv/
